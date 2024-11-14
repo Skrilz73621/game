@@ -46,7 +46,7 @@ class Boss(GameEntity):
     def attack(self, heroes):
         for hero in heroes:
             if hero.health > 0:
-                if type(hero) == Berserk and self.__defence != hero.ability:
+                if isinstance(hero, Berserk) and self.__defence != hero.ability:
                     hero.blocked_damage = choice([5, 10])
                     hero.health -= (self.damage - hero.blocked_damage)
                 else:
@@ -91,8 +91,37 @@ class Magic(Hero):
         super().__init__(name, health, damage, 'BOOST')
 
     def apply_super_power(self, boss, heroes):
-        pass
-        # TODO Here will be implementation of BOOSTING
+        for hero in heroes:
+            hero.damage += 5  # написано после каждого раунда, но кажется это слишком сильно
+
+
+class Witcher(Hero):
+    def __init__(self, name, health, damage):
+        super().__init__(name, health, 0, 'REINCORNATION')
+
+    def apply_super_power(self, boss, heroes):
+        for hero in heroes:
+            if hero.health == 0:
+                chance = randint(1, 5)
+                if chance >= 2:
+                    hero.health += 150
+                    self.health = 0
+                    print('Witcher sacrificed himself for', hero.name)
+                    break
+
+
+class Hacker(Hero):
+    def __init__(self, name, health, damage):
+        super().__init__(name, health, damage, 'VAMPIRIC')
+        self.__lifesteal = 10
+
+    @property
+    def lifesteal(self):
+        return self.__lifesteal
+
+    def apply_super_power(self, boss, heroes):
+        boss.health -= self.__lifesteal
+        choice(heroes).health += self.__lifesteal
 
 
 class Berserk(Hero):
@@ -122,6 +151,29 @@ class Medic(Hero):
         for hero in heroes:
             if hero.health > 0 and self != hero:
                 hero.health += self.__heal_points
+
+
+class King(Hero):
+    def __init__(self, name, health, damage):
+        super().__init__(name, health, 0, 'SUMMON_SAITAMA')
+
+    def apply_super_power(self, boss, heroes):
+        if randint(1, 10) == 1:
+            boss.health = 0
+            print(f'{self.name} summoned Saitama! Saitama defeated the Boss with a single punch!')
+
+
+class Golem(Hero):
+    def __init__(self, name, health, damage):
+        super().__init__(name, health, damage, 'SHIELD')
+
+    def apply_super_power(self, boss, heroes):
+        self.shield_amount = boss.damage // 5
+        for hero in heroes:
+            if hero.health > 0 and hero != self:
+                hero.health += self.shield_amount
+                self.health -= self.shield_amount
+        print(f'{self.name} absorbed {self.shield_amount} damage for each hero from the Boss.')
 
 
 round_number = 0
@@ -162,14 +214,19 @@ def is_game_over(boss, heroes):
 
 
 def start_game():
-    boss = Boss(name='Dragon', health=1000, damage=50)
+    boss = Boss(name='Dragon', health=2000, damage=75)
     warrior_1 = Warrior(name='Mario', health=270, damage=10)
     warrior_2 = Warrior(name='Ben', health=280, damage=15)
     magic = Magic(name='Merlin', health=290, damage=10)
     berserk = Berserk(name='Guts', health=260, damage=5)
     doc = Medic(name='Aibolit', health=250, damage=5, heal_points=15)
     assistant = Medic(name='Kristin', health=300, damage=5, heal_points=5)
-    heroes_list = [warrior_1, doc, warrior_2, magic, berserk, assistant]
+    hacker = Hacker(name='Robert', health=210, damage=5)
+    witcher = Witcher(name='Nerzul', health=190, damage=0)
+    king = King(name='King', health=200, damage=0)
+    golem = Golem(name='Golem', health=500, damage=5)
+
+    heroes_list = [warrior_1, doc, warrior_2, magic, berserk, assistant, hacker, king, witcher, golem]
 
     show_statistics(boss, heroes_list)
     while not is_game_over(boss, heroes_list):
